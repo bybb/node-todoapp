@@ -24,11 +24,20 @@ app.get('/write', function(req, res){
 });
 
 app.post('/add', function(req, res){
-    db.collection('post').insertOne({ title: req.body.title, date: req.body.date }, function(err, result){
-        console.log('저장완료');
+    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result){
+        var totalCnt = result.totalPost;
+        db.collection('post').insertOne({ _id : totalCnt + 1, title : req.body.title, date : req.body.date }, function(err, result){
+            db.collection('counter').updateOne({ name : '게시물갯수' }, { $set : { totalPost : 1 } }, function(err, result){
+                if(err) return console.log(err);
+                
+            });
+        });
     });
 });
 
 app.get('/list', function(req, res){
-    res.render('list.ejs');
+    db.collection('post').find().toArray(function(err, result){
+        console.log(result);
+        res.render('list.ejs', { posts : result });
+    });
 });
