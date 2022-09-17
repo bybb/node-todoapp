@@ -12,14 +12,15 @@
 <body>
   <%- include('nav.html') %>
 
-    <form action="/add" method="POST">
+    <form action="/edit?_method=PUT" method="POST">
       <div class="container mb-3">
         <label for="exampleInputEmail1" class="form-label">할일</label>
-        <input type="text" class="form-control" name="title">
+        <input type="text" value="<%= post._id %>" name="id" style="display: none;">
+        <input value="<%= post.title %>" type="text" class="form-control" name="title">
       </div>
       <div class="container mb-3">
         <label for="exampleInputPassword1" class="form-label">날짜</label>
-        <input type="text" class="form-control" name="date">
+        <input value="<%= post.date %>" type="text" class="form-control" name="date">
       </div>
       <div class="container mb-3">
         <button type="submit" class="btn btn-primary">저장</button>
