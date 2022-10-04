@@ -34,29 +34,9 @@ app.get('/write', function(req, res){
     res.render('write.ejs');
 });
 
-app.post('/add', function(req, res){
-    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result){
-        var totalCnt = result.totalPost;
-        db.collection('post').insertOne({ _id : totalCnt + 1, title : req.body.title, date : req.body.date }, function(err, result){
-            db.collection('counter').updateOne({ name : '게시물갯수' }, { $inc : { totalPost : 1 } }, function(err, result){
-                if(err) return console.log(err);
-                res.send('저장완료');
-            });
-        });
-    });
-});
-
 app.get('/list', function(req, res){
     db.collection('post').find().toArray(function(err, result){
         res.render('list.ejs', { posts : result });
-    });
-});
-
-app.delete('/delete', function(req, res){
-    req.body._id = parseInt(req.body._id);
-    db.collection('post').deleteOne(req.body, function(err, result){
-        console.log('삭제완료');
-        res.status(200).send({ message : '성공했습니다' });
     });
 });
 
@@ -93,6 +73,28 @@ app.get('/mypage', isLogin, function(req, res){
     res.render('mypage.ejs', { user : req.user });
 });
 
+app.get('/search', (req, res) => {
+    var search = [
+        {
+            $search : {
+                index : 'titleSearch',
+                text : {
+                    query : req.query.value,
+                    path : ['title']
+                }
+            },        
+        },
+        { $sort : { _id : 1 } },
+        { $limit : 10 },
+        { $project : { title : 1, _id : 0, score : { $meta : 'searchScore' } } }
+    ]
+
+    db.collection('post').aggregate(search).toArray((err, result) => {
+        result = result ? result : [];
+        res.render('search.ejs', { posts : result });
+    });
+});
+
 function isLogin(req, res, next){
     if (req.user) {
         next();
@@ -126,4 +128,66 @@ passport.deserializeUser(function(id, done){
     db.collection('login').findOne({id : id}, function(err, result){
         done(null, result);
     });
+});
+
+app.post('/register', (req, res) => {
+    db.collection('login').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result){
+        res.redirect('/');
+    });
+});
+
+app.post('/add', function(req, res){
+    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result){
+        var totalCnt = result.totalPost;
+        var saveData = { _id : totalCnt + 1, title : req.body.title, date : req.body.date, writer : req.user._id };
+        db.collection('post').insertOne(saveData, function(err, result){
+            db.collection('counter').updateOne({ name : '게시물갯수' }, { $inc : { totalPost : 1 } }, function(err, result){
+                if(err) return console.log(err);
+                res.send('저장완료');
+            });
+        });
+    });
+});
+
+app.delete('/delete', function(req, res){
+    req.body._id = parseInt(req.body._id);
+    var removeData = { _id : req.body._id, writer : req.user._id };
+    
+    db.collection('post').deleteOne(removeData, function(err, result){
+        console.log('삭제완료');
+        res.status(200).send({ message : '성공했습니다' });
+    });
+});
+
+app.use('/shop', require('./routes/shop.js'));
+app.use('/board/sub', require('./routes/board.js'));
+
+app.get('/upload', (req, res) => {
+    res.render('upload.ejs');
+});
+
+let multer = require('multer');
+var storage = multer.diskStorage({
+    destination : function(req, file, cb){
+        cb(null, './public/image');
+    },
+    filename : function(req, file, cb){
+        cb(null, file.originalname);
+    },
+    filefilter : function(req, file, cb){
+
+    },
+    limits : function(req, file, cb){
+
+    }
+});
+
+var upload = multer({ storage : storage });
+
+app.post('/upload', upload.single('profile'), (req, res) => {
+    res.send('업로드완료');
+});
+
+app.get('/image/:imageName', (req, res) => {
+    res.sendFile(__dirname + '/public/image/' + req.params.imageName);
 });
