@@ -44,6 +44,13 @@ io.on('connection', function(socket){
         io.emit('broadcast', data);
     });
 
+    socket.on('joinroom', function(){
+        socket.join('room1');
+    });
+
+    socket.on('room1-send', function(data){
+        io.to('room1').emit('broadcast', data);
+    });
 });
 
 

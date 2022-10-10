@@ -13,18 +13,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js"></script>
 
     <div>채팅방</div>
+    <div id="content"></div>
     <input id="input1">
     <button id="send">서버에 메시지 보내기</button>
-
+    <button id="room1">채팅방1 입장</button>
+    <button id="room1-send">채팅방1에서 메시지 보내기</button>
     <script>
     var socket = io();
     
+    $('#room1').click(function(){
+        socket.emit('joinroom', '채팅방입장시켜줘');
+    });
+
+    $('#room1-send').click(function(){
+        socket.emit('room1-send', $('#input1').val());
+    });
+
     $('#send').click(function(){
         socket.emit('user-send', $('#input1').val());
     });
 
     socket.on('broadcast', function(data){
-        console.log(data);
+        $('#content').append('<div>' + data + '</div>');
     });
     
     </script>
