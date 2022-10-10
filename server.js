@@ -1,5 +1,10 @@
 const express = require('express');
 const app = express();
+
+const http = require('http').createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(http);
+
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended : true}));
 const MongoClient = require('mongodb').MongoClient;
@@ -22,10 +27,25 @@ MongoClient.connect('mongodb+srv://ai9gle:4fkdgo@cluster0.b5db193.mongodb.net/to
     if (err) return console.log(err);
     db = client.db('todoapp');
 
-    app.listen(8080, function(){
+    http.listen(8080, function(){
         console.log('listening 8080');
     });
 });
+
+app.get('/socket', function(req, res){
+    res.render('socket.ejs');
+});
+
+io.on('connection', function(socket){
+    console.log('접속됨');
+
+    socket.on('user-send', function(data){
+        console.log(data);
+        io.emit('broadcast', data);
+    });
+
+});
+
 
 app.get('/', function(req, res){
     res.render('index.ejs');
@@ -168,6 +188,7 @@ app.get('/upload', (req, res) => {
 });
 
 let multer = require('multer');
+const { Socket } = require('dgram');
 var storage = multer.diskStorage({
     destination : function(req, file, cb){
         cb(null, './public/image');
